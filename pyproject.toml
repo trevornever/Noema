@@ -1,0 +1,25 @@
+[project]
+name = "noema"
+version = "0.2.0"
+description = "Noema: dual-mode imagination & dream engine (FastAPI SSE orchestrator + SQLite DAG memory)"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "httpx>=0.27",
+    "aiosqlite>=0.20",
+    "pydantic>=2.7",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.setuptools.packages.find]
+include = ["noema*"]
+
+[tool.setuptools.package-data]
+noema = ["static/*.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning:fastapi.testclient", "ignore:Using `httpx`"]

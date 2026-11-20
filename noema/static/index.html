@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Noema Studio</title>
+  <style>
+    :root {
+      --bg: #090b10; --surface: #11151e; --surface-hover: #181e2c; --border: #232a3b;
+      --text: #e2e8f0; --muted: #7f8ea3; --accent: #6366f1; --accent-soft: rgba(99,102,241,.18);
+      --emerald: #10b981; --danger: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      background: var(--bg); color: var(--text);
+      display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden;
+    }
+    header {
+      display: flex; flex-wrap: wrap; gap: .5rem; justify-content: space-between; align-items: center;
+      padding: .75rem 1rem; border-bottom: 1px solid var(--border); background: var(--surface);
+    }
+    .brand { display: flex; align-items: center; gap: .75rem; font-size: .9rem; }
+    .controls { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+    .btn {
+      background: transparent; color: var(--muted); border: 1px solid var(--border);
+      padding: .35rem .75rem; cursor: pointer; border-radius: 4px; font-family: inherit; font-size: .78rem;
+    }
+    .btn:hover, .btn:focus-visible { color: var(--text); border-color: var(--muted); outline: none; }
+    .btn.active { color: #fff; border-color: var(--accent); background: var(--accent-soft); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .workspace {
+      flex: 1; min-height: 0; display: grid; grid-template-columns: 310px 1fr 1fr; gap: 1rem; padding: 1rem;
+    }
+    @media (max-width: 900px) {
+      .workspace { grid-template-columns: 1fr; grid-auto-rows: minmax(180px, 1fr); overflow-y: auto; }
+    }
+    .panel {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+      display: flex; flex-direction: column; overflow: hidden; min-height: 0;
+    }
+    .panel-header {
+      padding: .65rem .9rem; border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+    }
+    .panel-body { flex: 1; padding: .9rem; overflow-y: auto; min-height: 0; }
+    .tree-node {
+      border: 1px solid var(--border); border-left-width: 3px; border-radius: 4px; padding: .55rem;
+      margin-bottom: .5rem; cursor: pointer; transition: background .15s; background: var(--bg);
+      width: 100%; text-align: left; color: inherit; font: inherit; display: block;
+    }
+    .tree-node:hover, .tree-node:focus-visible { background: var(--surface-hover); outline: none; }
+    .tree-node.selected { border-color: var(--accent); background: var(--accent-soft); }
+    .tree-node.lineage { border-left-color: var(--emerald); }
+    .node-meta { display: flex; justify-content: space-between; font-size: .68rem; color: var(--muted); margin-bottom: .3rem; }
+    .badge { padding: .1rem .35rem; border-radius: 3px; font-size: .65rem; background: var(--surface); border: 1px solid var(--border); }
+    .node-prompt { font-size: .78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .empty { color: var(--muted); font-size: .8rem; }
+    #stream-output { line-height: 1.65; white-space: pre-wrap; font-size: .9rem; overflow-wrap: anywhere; }
+    #stream-output .err { color: var(--danger); }
+    #canvas-frame {
+      flex: 1; display: flex; align-items: center; justify-content: center; min-height: 160px;
+      border: 1px dashed var(--border); border-radius: 4px; overflow: hidden; background: var(--bg);
+    }
+    #canvas-frame img { width: 100%; height: 100%; object-fit: cover; }
+    .lineage-bar {
+      padding: .45rem 1rem; background: #0d1017; border-top: 1px solid var(--border); gap: .5rem;
+      font-size: .75rem; color: var(--muted); display: flex; justify-content: space-between; align-items: center;
+    }
+    #branch-indicator { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    footer { padding: .85rem 1rem; border-top: 1px solid var(--border); background: var(--surface); display: flex; gap: .75rem; }
+    input {
+      flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--border); color: var(--text);
+      padding: .7rem .95rem; border-radius: 4px; font-family: inherit; font-size: .88rem;
+    }
+    input:focus { outline: none; border-color: var(--accent); }
+    .primary {
+      background: var(--accent); color: #fff; border: none; padding: 0 1.4rem;
+      border-radius: 4px; cursor: pointer; font-weight: bold; font-family: inherit;
+    }
+    .primary.stop { background: var(--danger); }
+    .primary:disabled { opacity: .45; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <strong>NOEMA</strong>
+      <span style="color:var(--muted)">// DUAL-MODE DAG STUDIO</span>
+      <span id="session-badge" class="badge"></span>
+      <span id="engine-badge" class="badge" title="Provider mode"></span>
+    </div>
+    <div class="controls" role="toolbar">
+      <button class="btn mode-btn active" data-mode="cocreate" aria-pressed="true">CO-CREATE (FAST)</button>
+      <button class="btn mode-btn" data-mode="synthesis" aria-pressed="false">SYNTHESIS (DEEP)</button>
+      <button class="btn" id="export-btn">EXPORT .MD</button>
+      <button class="btn" id="new-session-btn">NEW SESSION</button>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <aside class="panel">
+      <div class="panel-header"><span>Dream DAG Tree</span><span id="node-count">0 nodes</span></div>
+      <div class="panel-body" id="tree-container" role="tree"></div>
+    </aside>
+    <section class="panel">
+      <div class="panel-header">
+        <span>Narrative Synthesis</span>
+        <span id="active-node-label" style="color:var(--emerald)">ROOT</span>
+      </div>
+      <div class="panel-body" id="stream-scroll"><div id="stream-output" aria-live="polite">Awaiting seed prompt...</div></div>
+    </section>
+    <section class="panel">
+      <div class="panel-header"><span>Visual Manifestation</span><span id="render-status">IDLE</span></div>
+      <div class="panel-body" style="display:flex;"><div id="canvas-frame"></div></div>
+    </section>
+  </div>
+
+  <div class="lineage-bar">
+    <span id="branch-indicator"></span>
+    <button class="btn" id="reset-root-btn" style="padding:.2rem .5rem; font-size:.7rem;">FORK FROM ROOT</button>
+  </div>
+
+  <footer>
+    <input id="prompt-input" type="text" maxlength="4000" autocomplete="off"
+           placeholder="Dream directive or fork instruction — Enter to ignite, Esc to stop" />
+    <button id="send-btn" class="primary">IGNITE</button>
+  </footer>
+
+  <script>
+  "use strict";
+  (() => {
+    const $ = (id) => document.getElementById(id);
+    const el = (tag, props = {}, ...children) => {
+      const n = document.createElement(tag);
+      for (const [k, v] of Object.entries(props)) {
+        if (k === "class") n.className = v;
+        else if (k === "style") n.style.cssText = v;
+        else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+        else n.setAttribute(k, v);
+      }
+      for (const c of children) n.append(c instanceof Node ? c : document.createTextNode(String(c)));
+      return n;
+    };
+
+    const storage = {
+      get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+      set(k, v) { try { localStorage.setItem(k, v); } catch { /* private mode */ } },
+    };
+    const uuid = () => (crypto.randomUUID ? crypto.randomUUID()
+      : "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c =>
+          (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)));
+    const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
+
+    const state = {
+      mode: "cocreate",
+      sessionId: (() => { const s = storage.get("noema_session_id"); return s && ID_RE.test(s) ? s : uuid(); })(),
+      parentId: null,
+      nodes: [],
+      controller: null,
+    };
+    storage.set("noema_session_id", state.sessionId);
+
+    const ui = {
+      session: $("session-badge"), engine: $("engine-badge"), tree: $("tree-container"),
+      count: $("node-count"), out: $("stream-output"), scroll: $("stream-scroll"),
+      canvas: $("canvas-frame"), status: $("render-status"), branch: $("branch-indicator"),
+      label: $("active-node-label"), input: $("prompt-input"), send: $("send-btn"),
+    };
+
+    const muted = (text) => el("span", { class: "empty" }, text);
+    const short = (id) => id.slice(0, 8);
+
+    function setCanvas(url, fallback) {
+      ui.canvas.replaceChildren();
+      if (url && /^https?:\/\//i.test(url)) {
+        const img = el("img", { alt: "Rendered dream state", referrerpolicy: "no-referrer" });
+        img.addEventListener("error", () => ui.canvas.replaceChildren(muted("Image failed to load")));
+        img.src = url;
+        ui.canvas.append(img);
+      } else {
+        ui.canvas.append(fallback instanceof Node ? fallback : muted(fallback || "No active render"));
+      }
+    }
+
+    function setBusy(busy) {
+      ui.send.textContent = busy ? "STOP" : "IGNITE";
+      ui.send.classList.toggle("stop", busy);
+    }
+
+    function lineageSet(nodeId) {
+      const byId = new Map(state.nodes.map(n => [n.node_id, n]));
+      const set = new Set();
+      for (let cur = nodeId, guard = 0; cur && byId.has(cur) && guard < 10000; guard++) {
+        set.add(cur); cur = byId.get(cur).parent_id;
+      }
+      return set;
+    }
+
+    function renderBranch() {
+      ui.branch.replaceChildren("Branching from: ");
+      if (!state.parentId) {
+        ui.branch.append(el("strong", {}, "ROOT"), " (new timeline)");
+        ui.label.textContent = "ROOT";
+        return;
+      }
+      const node = state.nodes.find(n => n.node_id === state.parentId);
+      ui.branch.append(el("strong", {}, short(state.parentId)), node ? ` — "${node.prompt.slice(0, 60)}"` : "");
+      ui.label.textContent = `NODE ${short(state.parentId)}`;
+    }
+
+    function renderTree() {
+      ui.count.textContent = `${state.nodes.length} node${state.nodes.length === 1 ? "" : "s"}`;
+      if (!state.nodes.length) {
+        ui.tree.replaceChildren(muted("No nodes yet. Ignite a seed prompt below."));
+        return;
+      }
+      // Hierarchical DFS ordering so children sit directly under their parent.
+      const ids = new Set(state.nodes.map(n => n.node_id));
+      const children = new Map();
+      for (const n of state.nodes) {
+        const key = n.parent_id && ids.has(n.parent_id) ? n.parent_id : null;
+        if (!children.has(key)) children.set(key, []);
+        children.get(key).push(n);
+      }
+      const onPath = lineageSet(state.parentId);
+      const frag = document.createDocumentFragment();
+      const stack = (children.get(null) || []).slice().reverse().map(n => [n, 0]);
+      while (stack.length) {
+        const [node, level] = stack.pop();
+        const selected = node.node_id === state.parentId;
+        const btn = el("button", {
+          class: `tree-node${selected ? " selected" : ""}${onPath.has(node.node_id) && !selected ? " lineage" : ""}`,
+          role: "treeitem", "aria-selected": String(selected), title: node.prompt,
+          style: `margin-left:${Math.min(level, 12) * 14}px; width:calc(100% - ${Math.min(level, 12) * 14}px)`,
+          onclick: () => selectNode(node.node_id),
+        },
+          el("div", { class: "node-meta" },
+            el("span", {}, `#${node.node_id.slice(0, 6)} ${node.parent_id ? "↳ " + node.parent_id.slice(0, 6) : "● ROOT"}`),
+            el("span", { class: "badge" }, node.mode)),
+          el("div", { class: "node-prompt" }, node.prompt));
+        frag.append(btn);
+        for (const c of (children.get(node.node_id) || []).slice().reverse()) stack.push([c, level + 1]);
+      }
+      ui.tree.replaceChildren(frag);
+    }
+
+    function selectNode(nodeId, { recall = true } = {}) {
+      state.parentId = nodeId;
+      if (nodeId && recall) {
+        const node = state.nodes.find(n => n.node_id === nodeId);
+        if (node) {
+          ui.out.textContent = node.narrative;
+          setCanvas(node.image_url, `No image stored (${node.image_status})`);
+          ui.status.textContent = "RECALLED";
+        }
+      }
+      renderBranch();
+      renderTree();
+    }
+
+    async function refreshTree() {
+      try {
+        const res = await fetch(`/api/v1/sessions/${encodeURIComponent(state.sessionId)}/tree`);
+        if (!res.ok) return;
+        const data = await res.json();
+        state.nodes = Array.isArray(data.nodes) ? data.nodes : [];
+        if (state.parentId && !state.nodes.some(n => n.node_id === state.parentId)) state.parentId = null;
+        renderBranch();
+        renderTree();
+      } catch { /* offline: keep cached tree */ }
+    }
+
+    async function refreshHealth() {
+      try {
+        const res = await fetch("/api/v1/health");
+        if (!res.ok) throw new Error();
+        const h = await res.json();
+        ui.engine.textContent = `LLM:${String(h.llm).toUpperCase()} IMG:${String(h.image).toUpperCase()}`;
+      } catch { ui.engine.textContent = "OFFLINE"; }
+    }
+
+    function appendError(msg) {
+      ui.out.append(el("span", { class: "err" }, `\n[${msg}]`));
+    }
+
+    // Minimal spec-compliant SSE frame parser (handles CRLF, comments, multi-line data).
+    function parseFrame(raw) {
+      let event = "message"; const data = [];
+      for (const line of raw.split("\n")) {
+        if (!line || line.startsWith(":")) continue;
+        const i = line.indexOf(":");
+        const field = i === -1 ? line : line.slice(0, i);
+        let value = i === -1 ? "" : line.slice(i + 1);
+        if (value.startsWith(" ")) value = value.slice(1);
+        if (field === "event") event = value;
+        else if (field === "data") data.push(value);
+      }
+      return data.length ? { event, data: data.join("\n") } : null;
+    }
+
+    async function executeTurn() {
+      if (state.controller) { state.controller.abort(); return; }
+      const prompt = ui.input.value.trim();
+      if (!prompt) return;
+
+      const controller = new AbortController();
+      state.controller = controller;
+      ui.input.value = "";
+      ui.out.textContent = "";
+      ui.status.textContent = "STREAMING";
+      setCanvas(null, `Synthesizing visual layer [${state.mode}]...`);
+      setBusy(true);
+
+      let createdNodeId = null;
+      let persisted = false;
+      try {
+        const res = await fetch("/api/v1/stream", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
+          body: JSON.stringify({ session_id: state.sessionId, parent_id: state.parentId, mode: state.mode, prompt }),
+          signal: controller.signal,
+        });
+        if (!res.ok || !res.body) {
+          let detail = `HTTP ${res.status}`;
+          try { const j = await res.json(); detail += `: ${typeof j.detail === "string" ? j.detail : JSON.stringify(j.detail)}`; } catch {}
+          if (res.status === 404) await refreshTree();
+          throw new Error(detail);
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        for (;;) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true }).replace(/\r\n?/g, "\n");
+          let sep;
+          while ((sep = buffer.indexOf("\n\n")) !== -1) {
+            const frame = parseFrame(buffer.slice(0, sep));
+            buffer = buffer.slice(sep + 2);
+            if (!frame) continue;
+            let payload;
+            try { payload = JSON.parse(frame.data); } catch { continue; }
+
+            switch (frame.event) {
+              case "meta":
+                createdNodeId = payload.node_id;
+                ui.label.textContent = `NODE ${short(createdNodeId)} · depth ${payload.depth}`;
+                break;
+              case "token": {
+                const nearBottom = ui.scroll.scrollHeight - ui.scroll.scrollTop - ui.scroll.clientHeight < 40;
+                ui.out.append(payload.text);
+                if (nearBottom) ui.scroll.scrollTop = ui.scroll.scrollHeight;
+                break;
+              }
+              case "narrative_complete":
+                persisted = true;
+                ui.status.textContent = "RENDERING";
+                refreshTree();
+                break;
+              case "image":
+                if (payload.url) { setCanvas(payload.url); ui.status.textContent = payload.status === "mocked" ? "READY (MOCK)" : "READY"; }
+                else { setCanvas(null, el("span", { style: "color:var(--danger);font-size:.8rem" }, `Render failed: ${payload.detail || "unknown"}`)); ui.status.textContent = "ERROR"; }
+                break;
+              case "error":
+                appendError(`${payload.stage} error: ${payload.detail}`);
+                ui.status.textContent = "FAILED";
+                setCanvas(null, "Turn failed");
+                break;
+              case "done":
+                await refreshTree();
+                if (createdNodeId) selectNode(createdNodeId, { recall: false });
+                break;
+            }
+          }
+        }
+      } catch (err) {
+        if (err.name === "AbortError") {
+          appendError(persisted ? "Stopped — narrative saved, render cancelled" : "Stopped — turn discarded");
+          ui.status.textContent = "STOPPED";
+          if (persisted) { await refreshTree(); if (createdNodeId) selectNode(createdNodeId, { recall: false }); }
+        } else {
+          appendError(`Stream error: ${err.message}`);
+          ui.status.textContent = "FAILED";
+        }
+      } finally {
+        if (state.controller === controller) state.controller = null;
+        setBusy(false);
+        ui.input.focus();
+      }
+    }
+
+    function setMode(mode) {
+      state.mode = mode;
+      document.querySelectorAll(".mode-btn").forEach(b => {
+        const on = b.dataset.mode === mode;
+        b.classList.toggle("active", on);
+        b.setAttribute("aria-pressed", String(on));
+      });
+    }
+
+    document.querySelectorAll(".mode-btn").forEach(b => b.addEventListener("click", () => setMode(b.dataset.mode)));
+    $("reset-root-btn").addEventListener("click", () => selectNode(null));
+    $("new-session-btn").addEventListener("click", () => {
+      if (state.controller) state.controller.abort();
+      state.sessionId = uuid();
+      storage.set("noema_session_id", state.sessionId);
+      ui.session.textContent = `SESSION ${short(state.sessionId)}`;
+      state.nodes = [];
+      selectNode(null);
+      ui.out.textContent = "New session initialized. Awaiting seed prompt...";
+      setCanvas(null);
+      ui.status.textContent = "IDLE";
+    });
+    $("export-btn").addEventListener("click", () => {
+      window.open(`/api/v1/sessions/${encodeURIComponent(state.sessionId)}/export`, "_blank", "noopener");
+    });
+    ui.send.addEventListener("click", executeTurn);
+    ui.input.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); if (!state.controller) executeTurn(); }
+    });
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape" && state.controller) state.controller.abort();
+      if (e.altKey && e.key === "1") setMode("cocreate");
+      if (e.altKey && e.key === "2") setMode("synthesis");
+    });
+
+    ui.session.textContent = `SESSION ${short(state.sessionId)}`;
+    setCanvas(null);
+    renderBranch();
+    renderTree();
+    refreshTree();
+    refreshHealth();
+  })();
+  </script>
+</body>
+</html>

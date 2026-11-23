@@ -1,0 +1,41 @@
+services:
+  noema:
+    build:
+      context: .
+    image: noema-studio:local
+    restart: unless-stopped
+    init: true
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NOEMA_DB_PATH: /data/noema_memory.db
+      NOEMA_CORS_ORIGINS: ${NOEMA_CORS_ORIGINS:-http://localhost:8000,http://127.0.0.1:8000}
+      NOEMA_HOST: 0.0.0.0
+    ports:
+      - "127.0.0.1:${NOEMA_PORT:-8000}:8000"
+    volumes:
+      - noema_data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["local-ai"]
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    expose:
+      - "11434"
+
+volumes:
+  noema_data:
+  ollama_data:

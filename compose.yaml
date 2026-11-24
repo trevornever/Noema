@@ -13,9 +13,9 @@ services:
     environment:
       NOEMA_DB_PATH: /app/data/noema.db
       NOEMA_CORS_ORIGINS: ${NOEMA_CORS_ORIGINS:-http://localhost:8000}
-      LLM_BASE_URL: ${LLM_BASE_URL:-http://ollama:11434/v1}
-      LLM_MODEL: ${LLM_MODEL:-qwen2.5:7b}
-      LLM_API_KEY: ${LLM_API_KEY:-ollama}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com/v1}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      LLM_API_KEY: ${LLM_API_KEY:-}
     ports:
       - "127.0.0.1:8000:8000"
     volumes:

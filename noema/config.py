@@ -44,6 +44,7 @@ class Settings:
     db_path: str = field(
         default_factory=lambda: os.getenv("NOEMA_DB_PATH", str(PROJECT_DIR / "noema_memory.db"))
     )
+    database_url: str = field(default_factory=lambda: os.getenv("NOEMA_DATABASE_URL", ""))
     cors_origins: tuple[str, ...] = field(
         default_factory=lambda: _env_list("NOEMA_CORS_ORIGINS", "*")
     )

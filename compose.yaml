@@ -12,10 +12,14 @@ services:
         required: false
     environment:
       NOEMA_DB_PATH: /app/data/noema.db
+      NOEMA_DATABASE_URL: ${NOEMA_DATABASE_URL:-postgresql://noema:noema-local-only@postgres:5432/noema}
       NOEMA_CORS_ORIGINS: ${NOEMA_CORS_ORIGINS:-http://localhost:8000}
       LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com/v1}
       LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
       LLM_API_KEY: ${LLM_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "127.0.0.1:8000:8000"
     volumes:
@@ -27,6 +31,21 @@ services:
       start_period: 15s
       retries: 3
 
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: noema
+      POSTGRES_USER: noema
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-noema-local-only}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U noema -d noema"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   ollama:
     image: ollama/ollama:latest
     profiles: ["local-ai"]
@@ -37,4 +56,5 @@ services:
 
 volumes:
   noema_data:
+  postgres_data:
   ollama_models:

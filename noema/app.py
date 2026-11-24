@@ -45,11 +45,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-        store = (
-            PostgresDreamStore(settings.database_url)
-            if settings.database_url.startswith(("postgres://", "postgresql://", "postgresql+asyncpg://"))
-            else DreamStore(settings.db_path)
-        )
+        store = (PostgresDreamStore(settings.database_url) if settings.database_url.startswith(("postgres://", "postgresql://", "postgresql+asyncpg://")) else DreamStore(settings.db_path))
         await store.open()
         client = httpx.AsyncClient(
             timeout=httpx.Timeout(45.0, connect=5.0),
@@ -95,7 +91,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.post("/api/v1/stream")
     async def stream_turn(request: Request, payload: DreamTurnRequest) -> StreamingResponse:
-        store = request.app.state.store
+        store: DreamStore = request.app.state.store
         depth = 0
         if payload.parent_id is not None:
             parent_depth = await store.get_node_depth(payload.session_id, payload.parent_id)
@@ -146,8 +142,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 lines += [f"![Render]({n['image_url']})", ""]
             lines += ["---", ""]
         return PlainTextResponse(
-            "
-".join(lines),
+            "\n".join(lines),
             # text/plain so browsers render it in a tab instead of forcing a download.
             media_type="text/plain; charset=utf-8",
             headers={"Content-Disposition": f'inline; filename="noema-{session_id[:8]}.md"'},

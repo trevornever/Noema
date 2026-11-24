@@ -15,7 +15,8 @@ from . import __version__
 from .config import PACKAGE_DIR, Settings
 from .models import ID_PATTERN, DreamTurnRequest
 from .orchestrator import EngineMetrics, TurnPlan, new_node_id, orchestrate_turn
-from .store import DreamStore\nfrom .postgres_store import PostgresDreamStore
+from .store import DreamStore
+from .postgres_store import PostgresDreamStore
 
 log = logging.getLogger("noema")
 INDEX_HTML = PACKAGE_DIR / "static" / "index.html"

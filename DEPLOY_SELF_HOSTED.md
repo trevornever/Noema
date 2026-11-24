@@ -1,8 +1,8 @@
 # Self-host Noema with Docker Compose
 
 This deployment is designed for a single machine and binds the web interface to
-127.0.0.1 only. It uses the existing SQLite store on a named Docker volume;
-PostgreSQL is a separate migration milestone and is not implied by this package.
+127.0.0.1 only. It uses PostgreSQL by default, with SQLite retained as a direct-run fallback. Both
+services persist data in named Docker volumes.
 
 ## Requirements
 
@@ -50,7 +50,8 @@ Noema.
 
 ## Data and operations
 
-- Session data persists in the `noema_data` named volume.
+- PostgreSQL session data persists in the `postgres_data` named volume.
+- Ollama model files persist in the `ollama_models` named volume.
 - `docker compose down` removes containers but preserves the volume.
 - `docker compose down -v` **deletes all Noema and Ollama volume data**.
 - Logs: `docker compose logs -f noema`
@@ -65,3 +66,11 @@ Add authentication and per-user authorization before making it public.
 
 Secrets belong in the untracked `.env` file. Do not commit it. Back up the
 `noema_data` volume before upgrades or experiments.
+
+## PostgreSQL selection
+
+Docker Compose sets `NOEMA_DATABASE_URL` and waits for PostgreSQL readiness before
+starting Noema. For direct Python runs, omit `NOEMA_DATABASE_URL` to use SQLite;
+set it to a PostgreSQL DSN to use the asyncpg backend. Schema creation is currently
+performed idempotently at application startup; versioned Alembic migrations are
+a follow-up hardening task.

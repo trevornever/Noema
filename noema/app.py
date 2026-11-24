@@ -15,7 +15,7 @@ from . import __version__
 from .config import PACKAGE_DIR, Settings
 from .models import ID_PATTERN, DreamTurnRequest
 from .orchestrator import EngineMetrics, TurnPlan, new_node_id, orchestrate_turn
-from .store import DreamStore
+from .store import DreamStore\nfrom .postgres_store import PostgresDreamStore
 
 log = logging.getLogger("noema")
 INDEX_HTML = PACKAGE_DIR / "static" / "index.html"
@@ -44,7 +44,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-        store = DreamStore(settings.db_path)
+        store = (\n            PostgresDreamStore(settings.database_url)\n            if settings.database_url.startswith(("postgres://", "postgresql://", "postgresql+asyncpg://"))\n            else DreamStore(settings.db_path)\n        )
         await store.open()
         client = httpx.AsyncClient(
             timeout=httpx.Timeout(45.0, connect=5.0),
@@ -76,7 +76,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/api/v1/health")
     async def health(request: Request) -> dict[str, object]:
-        store: DreamStore = request.app.state.store
+        store = request.app.state.store
         metrics: EngineMetrics = request.app.state.metrics
         db_ok = await store.ping()
         return {

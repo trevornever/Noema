@@ -33,7 +33,7 @@ class PostgresDreamStore:
     """PostgreSQL implementation of the DreamStore interface."""
 
     def __init__(self, dsn: str, *, min_size: int = 1, max_size: int = 10) -> None:
-        self._dsn = dsn
+        self._dsn = dsn.replace("postgresql+asyncpg://", "postgresql://", 1)
         self._min_size = min_size
         self._max_size = max_size
         self._pool: asyncpg.Pool | None = None

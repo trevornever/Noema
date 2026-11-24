@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import time
-from typing import Any
-
 import asyncpg
 
 from .models import DreamNode, LineageNode
@@ -47,7 +45,9 @@ class PostgresDreamStore:
         )
         try:
             async with pool.acquire() as conn:
-                await conn.execute(_SCHEMA)
+                for statement in _SCHEMA.split(";"):
+                    if statement.strip():
+                        await conn.execute(statement)
         except BaseException:
             await pool.close()
             raise

@@ -68,3 +68,12 @@ With no keys set, both providers run in mock mode, so everything works out of th
 | Node lost if the client left during the render | Node saved when the narrative completes |
 | UI ignored HTTP errors; the tree was ordered by time, not hierarchy | `res.ok` handling, DFS tree with lineage highlight, Stop/Esc, Alt+1/2 mode switch |
 | Harness only counted client-side results | Checks parent edges, that aborted nodes were not saved, and that **server counters drain to 0** |
+
+
+## Self-host with Docker
+
+See [DEPLOY_SELF_HOSTED.md](DEPLOY_SELF_HOSTED.md) for the Docker Compose setup.
+The starter runs locally in mock mode, persists SQLite data in a named volume,
+and offers an optional Ollama profile for local inference. It is intentionally
+loopback-bound and is not yet a public multi-user deployment. PostgreSQL support
+and authentication remain planned follow-on work.

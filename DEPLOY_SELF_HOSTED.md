@@ -7,7 +7,7 @@ PostgreSQL is a separate migration milestone and is not implied by this package.
 ## Requirements
 
 - Docker Engine
-- Docker Compose v2
+- Docker Compose v2.24 or newer
 
 ## Start in mock mode
 
@@ -18,28 +18,35 @@ docker compose ps
 ```
 
 Open http://localhost:8000. With no provider credentials, Noema uses its built-in
-mock LLM and image providers. This is useful for validating the UI and branching
-workflow without an API account.
+mock LLM and image providers. This validates the UI and branching workflow
+without an external AI account.
 
 ## Optional local inference with Ollama
 
-Start the Ollama service:
+First enable the Ollama profile and pull a model:
 
 ```bash
-docker compose --profile local-ai up --build -d
+docker compose --profile local-ai up -d ollama
 docker compose exec ollama ollama pull qwen2.5:7b
 ```
 
-The Compose defaults point Noema at Ollama's OpenAI-compatible endpoint. Model
-downloads can be several gigabytes; choose a smaller model if the machine has
-limited RAM. The Ollama service is not published on a host port.
+Then add these values to `.env` and recreate Noema:
 
-To return to mock mode, remove or comment out the LLM settings in `.env` and
-recreate Noema:
+```dotenv
+LLM_API_KEY=ollama
+LLM_BASE_URL=http://ollama:11434/v1
+LLM_MODEL=qwen2.5:7b
+```
 
 ```bash
-docker compose up -d --force-recreate noema
+docker compose up --build -d noema
 ```
+
+Model downloads can be several gigabytes; choose a smaller model if the machine
+has limited RAM. Ollama is not published on a host port.
+
+To return to mock mode, remove the three LLM settings from `.env` and recreate
+Noema.
 
 ## Data and operations
 
@@ -54,8 +61,7 @@ docker compose up -d --force-recreate noema
 This is a local single-user starter, not a hardened public deployment. The host
 port is loopback-only and no authentication layer is included yet. Do not expose
 port 8000 to the internet or place sensitive multi-user data on this instance.
-For remote access, put it behind a properly configured VPN/reverse proxy and add
-authentication and per-user authorization before making it public.
+Add authentication and per-user authorization before making it public.
 
 Secrets belong in the untracked `.env` file. Do not commit it. Back up the
 `noema_data` volume before upgrades or experiments.

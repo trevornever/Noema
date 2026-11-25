@@ -28,18 +28,18 @@ Example for a local Compose deployment:
 ```bash
 docker compose stop noema
 # Copy your SQLite file into the project directory if it is elsewhere.
-NOEMA_DATABASE_URL='postgresql://noema:YOUR_PASSWORD@localhost:5432/noema' \
+NOEMA_DATABASE_URL='postgresql://noema:YOUR_PASSWORD@localhost:5433/noema' \
   python -m noema.import_sqlite ./noema_memory.db --dry-run
 NOEMA_DATABASE_URL='postgresql://noema:YOUR_PASSWORD@localhost:5432/noema' \
   python -m noema.import_sqlite ./noema_memory.db
 docker compose start noema
 ```
 
-Run the importer from an environment with the project requirements installed
-and network access to PostgreSQL. For a Compose-internal command, use the
-service hostname `postgres`; from the host, publish a temporary loopback port
-or use a one-off container on the Compose network. Do not expose PostgreSQL
-publicly just to run an import.
+Compose publishes PostgreSQL on loopback only at port 5433 by default
+(configurable with `POSTGRES_HOST_PORT`). The host-side command above can
+therefore reach it without exposing the database to the network. The Noema app
+continues to use the internal Compose hostname `postgres:5432`. Do not change
+the bind address to a public interface.
 
 ## Backup
 

@@ -26,6 +26,7 @@ jobs:
           --health-timeout 5s
           --health-retries 12
     env:
+      PYTHONPATH: .
       TEST_POSTGRES_DSN: postgresql://noema:noema-ci@localhost:5432/noema
     steps:
       - uses: actions/checkout@v4
@@ -41,5 +42,7 @@ jobs:
         run: python -m compileall -q noema tests
       - name: Run test suite (SQLite + PostgreSQL)
         run: pytest -q
+      - name: Check maintenance scripts
+        run: sh -n scripts/backup.sh scripts/restore.sh
       - name: Build container
         run: docker build -t noema:ci .

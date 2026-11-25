@@ -4,6 +4,7 @@ import time
 import asyncpg
 
 from .models import DreamNode, LineageNode
+from .migrations import apply_migrations
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS dream_nodes (
@@ -48,6 +49,11 @@ class PostgresDreamStore:
                 for statement in _SCHEMA.split(";"):
                     if statement.strip():
                         await conn.execute(statement)
+        except BaseException:
+            await pool.close()
+            raise
+        try:
+            await apply_migrations(pool)
         except BaseException:
             await pool.close()
             raise

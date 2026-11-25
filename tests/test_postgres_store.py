@@ -49,6 +49,17 @@ class TestPostgresStore(unittest.IsolatedAsyncioTestCase):
             nodes = await store.session_nodes(session)
             self.assertEqual(len(nodes), 2)
             self.assertEqual(nodes[1]["image_status"], "mocked")
+
+            with self.assertRaises(asyncpg.ForeignKeyViolationError):
+                await store.insert_node(
+                    node_id="cross_" + uuid.uuid4().hex,
+                    session_id="different_session",
+                    parent_id=root,
+                    depth=1,
+                    mode="cocreate",
+                    prompt="must be rejected",
+                    narrative="cross-session parent edge",
+                )
         finally:
             async with store.pool.acquire() as conn:
                 await conn.execute("DELETE FROM dream_nodes WHERE session_id=$1", session)

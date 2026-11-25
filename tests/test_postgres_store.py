@@ -4,6 +4,8 @@ import os
 import unittest
 import uuid
 
+import asyncpg
+
 from noema.postgres_store import PostgresDreamStore
 
 DSN = os.getenv("TEST_POSTGRES_DSN")

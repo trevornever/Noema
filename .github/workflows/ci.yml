@@ -26,6 +26,7 @@ jobs:
           --health-timeout 5s
           --health-retries 12
     env:
+      PYTHONPATH: .
       TEST_POSTGRES_DSN: postgresql://noema:noema-ci@localhost:5432/noema
     steps:
       - uses: actions/checkout@v4

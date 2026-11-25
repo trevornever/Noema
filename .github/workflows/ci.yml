@@ -41,5 +41,7 @@ jobs:
         run: python -m compileall -q noema tests
       - name: Run test suite (SQLite + PostgreSQL)
         run: pytest -q
+      - name: Check maintenance scripts
+        run: sh -n scripts/backup.sh scripts/restore.sh
       - name: Build container
         run: docker build -t noema:ci .

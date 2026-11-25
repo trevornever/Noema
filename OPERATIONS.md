@@ -44,7 +44,7 @@ publicly just to run an import.
 ## Backup
 
 ```bash
-./scripts/backup.sh
+sh scripts/backup.sh
 ```
 
 Backups are PostgreSQL custom-format dumps in `./backups`. The script uses a
@@ -58,7 +58,7 @@ then explicitly confirm:
 
 ```bash
 ./scripts/backup.sh
-CONFIRM_RESTORE=YES ./scripts/restore.sh ./backups/noema-YYYYMMDDTHHMMSSZ.dump
+CONFIRM_RESTORE=YES sh scripts/restore.sh ./backups/noema-YYYYMMDDTHHMMSSZ.dump
 ```
 
 Never run restore against the only copy of important data. Verify application

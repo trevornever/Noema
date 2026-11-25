@@ -78,3 +78,12 @@ See [DEPLOY_SELF_HOSTED.md](DEPLOY_SELF_HOSTED.md) for the Docker Compose setup.
 The starter runs locally in mock mode, persists PostgreSQL data in a named volume,
 and offers an optional Ollama profile for local inference. It is intentionally
 loopback-bound and is not yet a public multi-user deployment. Authentication and versioned database migrations remain planned follow-on work.
+
+
+## Database operations
+
+Versioned PostgreSQL migrations are applied transactionally at startup. See
+[OPERATIONS.md](OPERATIONS.md) for the SQLite importer, dry-run validation,
+backup, and explicitly guarded restore procedure. Do not expose the local
+Compose instance publicly; authentication and multi-user authorization remain
+prerequisites for internet-facing deployment.

@@ -186,14 +186,6 @@ def test_llm_adapter_parses_openai_stream() -> None:
     assert roles == ["system", "user", "assistant", "user"]
 
 
-@pytest.mark.parametrize(
-    "response",
-    [
-        httpx.Response(401, json={"error": "bad key"}),
-        httpx.Response(200, content=b"data: {not json}\n\n"),
-        httpx.Response(200, content=b'data: {"error": {"message": "overloaded"}}\n\n'),
-    ],
-)
 def test_llm_adapter_supports_local_endpoint_without_api_key() -> None:
     body = _sse_body({"choices": [{"delta": {"content": "Local model"}}]})
     seen: dict[str, str] = {}
@@ -216,6 +208,14 @@ def test_llm_adapter_supports_local_endpoint_without_api_key() -> None:
     assert seen["authorization"] == ""
 
 
+@pytest.mark.parametrize(
+    "response",
+    [
+        httpx.Response(401, json={"error": "bad key"}),
+        httpx.Response(200, content=b"data: {not json}\n\n"),
+        httpx.Response(200, content=b'data: {"error": {"message": "overloaded"}}\n\n'),
+    ],
+)
 def test_llm_adapter_raises_provider_error(response: httpx.Response) -> None:
     async def go() -> None:
         async with httpx.AsyncClient(transport=httpx.MockTransport(lambda _: response)) as http:

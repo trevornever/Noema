@@ -84,7 +84,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "status": "ok" if db_ok else "degraded",
             "version": __version__,
             "db": db_ok,
-            "llm": "live" if settings.llm_api_key else "mock",
+            "llm": "mock" if (settings.llm_mock_mode if settings.llm_mock_mode is not None else not settings.llm_api_key) else "live",
             "image": "live" if settings.image_api_key else "mock",
             **metrics.snapshot(),
         }

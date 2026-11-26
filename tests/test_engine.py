@@ -186,6 +186,28 @@ def test_llm_adapter_parses_openai_stream() -> None:
     assert roles == ["system", "user", "assistant", "user"]
 
 
+def test_llm_adapter_supports_local_endpoint_without_api_key() -> None:
+    body = _sse_body({"choices": [{"delta": {"content": "Local model"}}]})
+    seen: dict[str, str] = {}
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        seen["url"] = str(req.url)
+        seen["authorization"] = req.headers.get("authorization", "")
+        return httpx.Response(200, content=body, headers={"content-type": "text/event-stream"})
+
+    async def go() -> list[str]:
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http:
+            settings = Settings(
+                llm_api_key="", llm_mock_mode=False,
+                llm_base_url="http://ollama:11434/v1", db_path=":memory:",
+            )
+            return [t async for t in stream_llm_tokens(http, settings, EngineMode.COCREATE, "p", [])]
+
+    assert asyncio.run(go()) == ["Local model"]
+    assert seen["url"] == "http://ollama:11434/v1/chat/completions"
+    assert seen["authorization"] == ""
+
+
 @pytest.mark.parametrize(
     "response",
     [

@@ -21,6 +21,18 @@ def _env_float(name: str, default: float) -> float:
     return value
 
 
+def _env_bool(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None or raw.strip() == "":
+        return default
+    value = raw.strip().lower()
+    if value in {"1", "true", "yes", "on"}:
+        return True
+    if value in {"0", "false", "no", "off"}:
+        return False
+    raise ValueError(f"{name} must be a boolean, got {raw!r}")
+
+
 def _env_int(name: str, default: int) -> int:
     raw = os.getenv(name)
     if raw is None or raw.strip() == "":
@@ -65,6 +77,13 @@ class Settings:
     )
 
     llm_api_key: str = field(default_factory=lambda: os.getenv("LLM_API_KEY", ""))
+    # No key defaults to mock mode for a safe zero-config start. Set false for local
+    # OpenAI-compatible servers (for example Ollama) that do not require a key.
+    llm_mock_mode: bool | None = field(
+        default_factory=lambda: (
+            _env_bool("LLM_MOCK_MODE", False) if os.getenv("LLM_MOCK_MODE") is not None else None
+        )
+    )
     llm_base_url: str = field(
         default_factory=lambda: os.getenv("LLM_BASE_URL", "https://api.openai.com/v1").rstrip("/")
     )

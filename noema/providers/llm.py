@@ -67,7 +67,8 @@ async def stream_llm_tokens(
     Raises ProviderError for any upstream/transport/protocol failure. Never raises
     raw httpx/JSON errors so the orchestrator can emit a typed `error` frame.
     """
-    if settings.llm_mock_mode:
+    mock_mode = settings.llm_mock_mode if settings.llm_mock_mode is not None else not settings.llm_api_key
+    if mock_mode:
         async for tok in _mock_tokens(settings, mode, prompt, lineage):
             yield tok
         return

@@ -33,7 +33,7 @@ docker compose exec ollama ollama pull qwen2.5:7b
 Then add these values to `.env` and recreate Noema:
 
 ```dotenv
-LLM_API_KEY=ollama
+LLM_MOCK_MODE=false
 LLM_BASE_URL=http://ollama:11434/v1
 LLM_MODEL=qwen2.5:7b
 ```
@@ -41,6 +41,11 @@ LLM_MODEL=qwen2.5:7b
 ```bash
 docker compose up --build -d noema
 ```
+
+No API key is required for the local Ollama service. `LLM_MOCK_MODE=false` is
+important: without it, Noema intentionally stays in safe mock mode when no API key
+is configured. For a remote OpenAI-compatible provider, set `LLM_API_KEY` and the
+provider URL/model; mock mode will default off when a key is present.
 
 Model downloads can be several gigabytes; choose a smaller model if the machine
 has limited RAM. Ollama is not published on a host port.

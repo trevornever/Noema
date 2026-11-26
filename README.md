@@ -32,7 +32,8 @@ With no keys set, both providers run in mock mode, so everything works out of th
 
 | Variable | Purpose | Default |
 |---|---|---|
-| `LLM_API_KEY` / `LLM_BASE_URL` / `LLM_MODEL` | Any OpenAI-compatible `/chat/completions` endpoint | mock / OpenAI / `gpt-4o-mini` |
+| `LLM_MOCK_MODE` | Force mock mode (`true`) or a live OpenAI-compatible endpoint (`false`) | inferred from whether `LLM_API_KEY` is set |
+| `LLM_API_KEY` / `LLM_BASE_URL` / `LLM_MODEL` | Any OpenAI-compatible `/chat/completions` endpoint; API key is optional for local endpoints such as Ollama | mock / OpenAI / `gpt-4o-mini` |
 | `IMAGE_API_KEY` / `IMAGE_API_URL` | Image provider (direct URL or `polling_url` flow, e.g. BFL/Flux) | mock |
 | `IMAGE_AUTH_HEADER` | `Authorization` sends `Bearer <key>`; any other header name (e.g. `x-key`) sends the raw key | `Authorization` |
 | `NOEMA_DB_PATH` | SQLite file when PostgreSQL DSN is unset | `./noema_memory.db` |
@@ -76,7 +77,7 @@ With no keys set, both providers run in mock mode, so everything works out of th
 
 See [DEPLOY_SELF_HOSTED.md](DEPLOY_SELF_HOSTED.md) for the Docker Compose setup.
 The starter runs locally in mock mode, persists PostgreSQL data in a named volume,
-and offers an optional Ollama profile for local inference. It is intentionally
+and offers an optional Ollama profile for local inference without a provider API key. It is intentionally
 loopback-bound and is not yet a public multi-user deployment. Authentication and versioned database migrations remain planned follow-on work.
 
 

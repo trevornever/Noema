@@ -79,8 +79,10 @@ class Settings:
     llm_api_key: str = field(default_factory=lambda: os.getenv("LLM_API_KEY", ""))
     # No key defaults to mock mode for a safe zero-config start. Set false for local
     # OpenAI-compatible servers (for example Ollama) that do not require a key.
-    llm_mock_mode: bool = field(
-        default_factory=lambda: _env_bool("LLM_MOCK_MODE", not bool(os.getenv("LLM_API_KEY", "").strip()))
+    llm_mock_mode: bool | None = field(
+        default_factory=lambda: (
+            _env_bool("LLM_MOCK_MODE", False) if os.getenv("LLM_MOCK_MODE") is not None else None
+        )
     )
     llm_base_url: str = field(
         default_factory=lambda: os.getenv("LLM_BASE_URL", "https://api.openai.com/v1").rstrip("/")

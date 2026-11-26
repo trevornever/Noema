@@ -67,7 +67,7 @@ async def stream_llm_tokens(
     Raises ProviderError for any upstream/transport/protocol failure. Never raises
     raw httpx/JSON errors so the orchestrator can emit a typed `error` frame.
     """
-    if not settings.llm_api_key:
+    if settings.llm_mock_mode:
         async for tok in _mock_tokens(settings, mode, prompt, lineage):
             yield tok
         return
@@ -79,10 +79,11 @@ async def stream_llm_tokens(
         "temperature": 0.85 if mode is EngineMode.SYNTHESIS else 0.7,
     }
     headers = {
-        "Authorization": f"Bearer {settings.llm_api_key}",
         "Content-Type": "application/json",
         "Accept": "text/event-stream",
     }
+    if settings.llm_api_key:
+        headers["Authorization"] = f"Bearer {settings.llm_api_key}"
     timeout = httpx.Timeout(connect=5.0, read=settings.llm_read_timeout_s, write=10.0, pool=5.0)
 
     try:
